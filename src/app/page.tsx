@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, ChangeEvent, FC, useEffect } from 'react';
-import { N8NFlow, N8NNode, UIComponent, N8NCase } from '@/types/n8n';
+import { N8NFlow, N8NNode } from '@/types/n8n';
 
 // --- Tipos Genéricos ---
 type AnalysisSection = {

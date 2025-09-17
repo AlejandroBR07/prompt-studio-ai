@@ -9,7 +9,7 @@
 ## UI Improvements with Tailwind CSS
 - [x] **Enhance ScoreCircle Component**: Added animations and better color gradients for score visualization.
 - [x] **Implement Dify-style and N8N-style Theming**: Added color schemes inspired by Dify and N8N for better UX.
-- [ ] **Improve NodeCard Styling**: Add hover effects, better shadows, and responsive design.
+- [x] **Improve NodeCard Styling**: Add hover effects, better shadows, and responsive design.
 - [x] **Add Loading States**: Implemented spinners and loading messages for better UX during API calls.
 - [ ] **Responsive Design**: Ensure all components work well on mobile devices.
 
