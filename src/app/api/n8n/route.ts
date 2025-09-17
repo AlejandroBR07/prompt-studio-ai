@@ -244,25 +244,31 @@ function findPromptInNodes(nodes: N8NNode[]): string | null {
 }
 
 // --- Helpers: Sanitização para compatibilidade com n8n ---
-function sanitizeSetNodeParameters(params: any) {
+function sanitizeSetNodeParameters(params: unknown): unknown {
   if (!params || typeof params !== 'object') return params;
 
+  const paramsObj = params as Record<string, unknown>;
+
   // Se já estiver no formato antigo (values), mantenha
-  if (params.values) return params;
+  if (paramsObj.values) return params;
 
   // Conversão do formato "assignments" (novo) para "values" (compatível com versões estáveis)
-  const assignmentsArray = Array.isArray(params.assignments?.assignments)
-    ? params.assignments.assignments
-    : Array.isArray(params.assignments)
-    ? params.assignments
+  const assignmentsObj = paramsObj.assignments as Record<string, unknown> | unknown[];
+  const assignmentsArray = Array.isArray(assignmentsObj)
+    ? assignmentsObj
+    : Array.isArray((assignmentsObj as Record<string, unknown>)?.assignments)
+    ? (assignmentsObj as Record<string, unknown>).assignments as unknown[]
     : null;
 
   if (assignmentsArray) {
     const stringValues = assignmentsArray
-      .filter((a: any) => a && a.name)
-      .map((a: any) => ({ name: a.name, value: a.value ?? '' }));
+      .filter((a: unknown) => a && typeof a === 'object' && (a as Record<string, unknown>).name)
+      .map((a: unknown) => ({
+        name: (a as Record<string, unknown>).name,
+        value: (a as Record<string, unknown>).value ?? ''
+      }));
 
-    const includeOther = params.includeOtherFields === true; // true = manter outros campos
+    const includeOther = paramsObj.includeOtherFields === true; // true = manter outros campos
 
     return {
       keepOnlySet: !includeOther, // n8n usa keepOnlySet: true para manter apenas os campos definidos
@@ -276,7 +282,7 @@ function sanitizeSetNodeParameters(params: any) {
   return params;
 }
 
-function sanitizeNode(node: N8NNode) {
+function sanitizeNode(node: N8NNode): N8NNode {
   const n = { ...node };
 
   // Garantir número em typeVersion
@@ -318,8 +324,8 @@ function sanitizeNode(node: N8NNode) {
       delete n.parameters[key];
     } else if (typeof value === 'object' && !Array.isArray(value)) {
       // Ensure object parameters are clean
-      const cleanObj: any = {};
-      for (const [subKey, subValue] of Object.entries(value as any)) {
+      const cleanObj: Record<string, unknown> = {};
+      for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
         if (subValue !== null && subValue !== undefined) {
           cleanObj[subKey] = subValue;
         }
@@ -329,7 +335,7 @@ function sanitizeNode(node: N8NNode) {
   }
 
   if (n.type?.endsWith('.set')) {
-    n.parameters = sanitizeSetNodeParameters(n.parameters);
+    n.parameters = sanitizeSetNodeParameters(n.parameters) as typeof n.parameters;
   }
 
   if (n.type?.endsWith('.webhook')) {
@@ -346,19 +352,19 @@ function sanitizeNode(node: N8NNode) {
   return n;
 }
 
-function sanitizeConnections(connections: any, nodes: any[]) {
+function sanitizeConnections(connections: unknown, nodes: unknown[]): Record<string, unknown> {
   if (!connections || typeof connections !== 'object') return {};
   // Garantir estrutura main: Connection[][]
-  const nodeNames = new Set((nodes || []).map((n: any) => n.name));
-  const sanitized: any = {};
-  for (const [key, value] of Object.entries(connections)) {
+  const nodeNames = new Set((nodes || []).map((n: unknown) => (n as Record<string, unknown>)?.name as string));
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(connections as Record<string, unknown>)) {
     if (!nodeNames.has(key)) continue; // ignora conexões para nós inexistentes
-    const main = (value as any)?.main;
+    const main = (value as Record<string, unknown>)?.main;
     if (Array.isArray(main)) {
       sanitized[key] = {
-        main: main.map((lane: any) =>
+        main: main.map((lane: unknown) =>
           Array.isArray(lane)
-            ? lane.filter((c: any) => c && typeof c === 'object' && typeof c.node === 'string')
+            ? lane.filter((c: unknown) => c && typeof c === 'object' && typeof (c as Record<string, unknown>).node === 'string')
             : []
         ),
       };
@@ -367,14 +373,17 @@ function sanitizeConnections(connections: any, nodes: any[]) {
   return sanitized;
 }
 
-function sanitizeN8NFlow(flow: any) {
-  const f: any = { ...flow };
-  f.nodes = Array.isArray(flow.nodes) ? flow.nodes.map(sanitizeNode) : [];
-  f.connections = sanitizeConnections(flow.connections, f.nodes);
+function sanitizeN8NFlow(flow: unknown): N8NFlow {
+  const flowObj = flow as Record<string, unknown>;
+  const f: Record<string, unknown> = { ...flowObj };
+  f.nodes = Array.isArray(flowObj.nodes)
+    ? (flowObj.nodes as unknown[]).map((node: unknown) => sanitizeNode(node as N8NNode))
+    : [];
+  f.connections = sanitizeConnections(flowObj.connections, f.nodes as unknown[]);
   if (typeof f.active !== 'boolean') f.active = false;
   if (!f.settings || typeof f.settings !== 'object') f.settings = { executionOrder: 'v1' };
   if (!f.tags) f.tags = [];
-  return f;
+  return f as unknown as N8NFlow;
 }
 
 interface RequestBody {
@@ -440,7 +449,7 @@ export async function POST(request: Request) {
     let result: N8NFlow;
     try {
       result = JSON.parse(rawText);
-    } catch (parseError) {
+    } catch {
       console.error("Failed to parse AI response as JSON:", rawText);
       throw new Error('A resposta da IA não estava em um formato JSON válido.');
     }

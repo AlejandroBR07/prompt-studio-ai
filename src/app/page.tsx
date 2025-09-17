@@ -109,8 +109,8 @@ const DifyStudio: FC = () => {
         throw new Error(data.error || 'Ocorreu um erro desconhecido.');
       }
       setAnalysis(data.analysis);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setIsLoading(false);
     }
@@ -265,8 +265,8 @@ const DifyQATester: FC = () => {
             turn.evaluation = evaluationData;
           }
 
-        } catch (convErr: any) {
-          turn.error = convErr.message;
+        } catch (convErr: unknown) {
+          turn.error = convErr instanceof Error ? convErr.message : 'Erro desconhecido';
         } finally {
           turn.isLoading = false;
           setConversation([...newConversation]); // Atualiza a UI com o resultado e avaliação

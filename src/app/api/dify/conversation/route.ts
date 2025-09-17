@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 
 const DIFY_API_URL = 'https://api.dify.ai/v1/chat-messages';
 
+interface DifyRequestBody {
+  inputs: Record<string, unknown>;
+  query: string;
+  response_mode: string;
+  user: string;
+  conversation_id?: string;
+}
+
 export async function POST(request: Request) {
   try {
     // 1. Validar a chave de API do Dify
