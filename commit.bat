@@ -59,7 +59,7 @@ if %errorlevel% neq 0 (
     echo AVISO: Nenhum repositorio remoto configurado.
     echo Para conectar ao GitHub:
     echo 1. Crie um repositorio no GitHub chamado "prompt-studio-ai"
-    echo 2. Execute: git remote add origin https://github.com/SEU_USERNAME/prompt-studio-ai.git
+    echo 2. Execute: git remote add origin https://github.com/AlejandroBR07/prompt-studio-ai.git
     echo 3. Execute: git push -u origin master
     echo.
 ) else (
